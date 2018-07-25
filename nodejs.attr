@@ -1,0 +1,3 @@
+%__nodejs10_provides  %{_rpmconfigdir}/nodejs10.prov
+%__nodejs10_requires  %{_rpmconfigdir}/nodejs10.req
+%__nodejs10_path  /usr/lib.*/node_modules/.*/package\\.json$
