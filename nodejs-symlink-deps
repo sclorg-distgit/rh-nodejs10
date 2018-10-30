@@ -76,9 +76,9 @@ def symlink_deps(deps, check):
         #read in the list of mutiple-versioned packages
         mvpkgs = open('/opt/rh/rh-nodejs10/root/usr/share/node/multiver_modules').read().split('\n')
             
-        for dep, ver in deps.iteritems():
-            if dep in mvpkgs and ver != '' and ver != '*':
-                depver = ver.lstrip('~').split('.')[0]
+        for dep, ver in deps.items():
+            if dep in mvpkgs and ver != '' and ver != '*' and ver != 'latest':
+                depver = ver.lstrip('~^').split('.')[0]
                 target = os.path.join(sitelib, '{0}@{1}'.format(dep, depver))
             else:
                 target = os.path.join(sitelib, dep)
@@ -92,7 +92,7 @@ def symlink_deps(deps, check):
             if not check or os.path.exists(target):
                 symlink(target, dep)
     
-    elif isinstance(deps, basestring):
+    elif isinstance(deps, str):
         target = os.path.join(sitelib, deps)
         if not check or os.path.exists(target):
             symlink(target, deps)
@@ -112,11 +112,16 @@ else:
     br_sitelib = os.path.join(os.environ['RPM_BUILD_ROOT'], sitelib.lstrip('/'))
     modules = [os.path.join(br_sitelib, module) for module in os.listdir(br_sitelib)]
 
+if '--optional' in sys.argv:
+    optional = True
+else:
+    optional = False
+
 for path in modules:
     os.chdir(path)
     md = json.load(open('package.json'))
     
-    if 'dependencies' in md or (check and 'devDependencies' in md):
+    if 'dependencies' in md or (check and 'devDependencies' in md) or (optional and 'optionalDependencies' in md):
         try:
             os.mkdir('node_modules')
         except OSError:
@@ -130,3 +135,6 @@ for path in modules:
 
         if check and '--no-devdeps' not in sys.argv and 'devDependencies' in md:
             symlink_deps(md['devDependencies'], check)
+
+        if optional and 'optionalDependencies' in md:
+            symlink_deps(md['optionalDependencies'], check)

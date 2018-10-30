@@ -13,7 +13,7 @@
 Summary: %scl Software Collection
 Name: %scl_name
 Version: 3.2
-Release: 1%{?dist}
+Release: 2%{?dist}
 
 Source1: macros.nodejs
 Source2: nodejs.attr
@@ -25,6 +25,7 @@ Source7: nodejs_native.attr
 Source8: README
 Source9: LICENSE
 Source10: multiver_modules
+Source11: nodejs-setversion
 
 License: MIT
 
@@ -107,6 +108,7 @@ install -pm0755 %{SOURCE5} %{buildroot}%{_rpmconfigdir}/%{name}-symlink-deps
 install -pm0755 %{SOURCE6} %{buildroot}%{_rpmconfigdir}/%{name}-fixdep
 install -Dpm0644 %{SOURCE7} %{buildroot}%{_rpmconfigdir}/fileattrs/%{name}_native.attr
 install -Dpm0644 %{SOURCE10} %{buildroot}%{_datadir}/node/multiver_modules
+install -pm0755 %{SOURCE11} %{buildroot}%{_rpmconfigdir}/%{name}-symlink-deps
 
 cat >> %{buildroot}%{_root_sysconfdir}/rpm/macros.%{scl_name_base}-scldevel << EOF
 %%scl_%{scl_name_base} %{scl}
@@ -148,6 +150,7 @@ install -m 644 %{scl_name}.7 %{buildroot}%{_mandir}/man7/%{scl_name}.7
 # own license dir (RHBZ#1420294)
 mkdir -p %{buildroot}%{_datadir}/licenses/
 
+
 %files
 
 %files -f filesystem runtime
@@ -173,6 +176,10 @@ mkdir -p %{buildroot}%{_datadir}/licenses/
 %{_root_sysconfdir}/rpm/macros.%{scl_name_base}-scldevel
 
 %changelog
+* Thu Sep 20 2018 Zuzana Svetlikova <zsvetlik@redhat.com> - 3.2-2
+- Resolves: RHBZ#1584252
+- update to fedora packaging, generate bundled provides automaticaly
+
 * Thu Jul 19 2018 Zuzana Svetlikova <zsvetlik@redhat.com> - 3.2-1
 - Update to v10
 

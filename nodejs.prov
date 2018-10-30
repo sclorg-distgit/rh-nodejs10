@@ -6,6 +6,7 @@ Automatic provides generator for Node.js libraries.
 Taken from package.json.  See `man npm-json` for details.
 """
 # Copyright 2012 T.C. Hollingsworth <tchollingsworth@gmail.com>
+# Copyright 2017 Tomas Tomecek <ttomecek@redhat.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -25,26 +26,73 @@ Taken from package.json.  See `man npm-json` for details.
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import json
-import subprocess
+from __future__ import print_function
+
+import os
 import sys
+import json
 
-paths = [path.rstrip() for path in sys.stdin.readlines()]
+provides = set()
 
-for path in paths:
-    if path.endswith('package.json'):
-        fh = open(path)
-        metadata = json.load(fh)
-        fh.close()
+def handle_package_json(path, bundled=False):
+    """
+    process package.json file available on path, print RPM dependency based on name and version
+    """
+    if not path.endswith('package.json') or not os.path.isfile(path):
+        return
+    fh = open(path)
+    metadata = json.load(fh)
+    fh.close()
 
-        if 'name' in metadata and not ('private' in metadata and metadata['private']):
-            print 'rh-nodejs10-npm(' + metadata['name'] + ')',
+    try:
+        if metadata['private']:
+            return
+    except KeyError:
+        pass
 
-            if 'version' in metadata:
-                print '= ' + metadata['version']
-            else:
-                print
+    try:
+        name = metadata["name"]
+    except KeyError:
+        return
+    try:
+        version = metadata["version"]
+    except KeyError:
+        return
 
-# invoke the regular RPM provides generator                
-p = subprocess.Popen(['/usr/lib/rpm/find-provides'], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-print p.communicate(input='\n'.join(paths))[0]
+    if bundled:
+        value = "bundled(nodejs-%s) = %s" % (name, version)
+    else:
+        value = "rh-nodejs10-npm(%s) = %s" % (name, version)
+    provides.add(value)
+
+
+def handle_module(path, bundled):
+    """
+    process npm module and all its bundled dependencies
+    """
+    handle_package_json(path, bundled=bundled)
+    if not os.path.isdir(path):
+        path = os.path.dirname(path)
+    node_modules_dir_candidate = os.path.join(path, "node_modules")
+    if os.path.isdir(node_modules_dir_candidate):
+        for module_path in os.listdir(node_modules_dir_candidate):
+            module_abs_path = os.path.join(node_modules_dir_candidate, module_path)
+            # skip modules which are linked against system module
+            if not os.path.islink(module_abs_path):
+                p_json_file = os.path.join(module_abs_path, "package.json")
+                handle_module(p_json_file, bundled=True)
+
+
+def main():
+    """ read list of package.json paths from stdin """
+    paths = [path.rstrip() for path in sys.stdin.readlines()]
+
+    for path in paths:
+        handle_module(path, bundled=False)
+
+    for provide in sorted(provides):
+        print(provide)
+
+
+if __name__ == '__main__':
+    main()
