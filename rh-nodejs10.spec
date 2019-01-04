@@ -13,7 +13,7 @@
 Summary: %scl Software Collection
 Name: %scl_name
 Version: 3.2
-Release: 2%{?dist}
+Release: 2.bs1%{?dist}
 
 Source1: macros.nodejs
 Source2: nodejs.attr
